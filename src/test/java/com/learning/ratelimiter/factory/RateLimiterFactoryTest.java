@@ -1,12 +1,9 @@
 package com.learning.ratelimiter.factory;
 
-import com.learning.ratelimiter.strategy.FixedWindowStrategy;
-import com.learning.ratelimiter.strategy.RateLimitingStrategy;
-import com.learning.ratelimiter.strategy.SlidingWindowStrategy;
+import com.learning.ratelimiter.strategy.*;
 import org.junit.jupiter.api.Test;
 
-import static com.learning.ratelimiter.strategy.RateLimitingAlgorithm.FIXED_WINDOW;
-import static com.learning.ratelimiter.strategy.RateLimitingAlgorithm.SLIDING_WINDOW;
+import static com.learning.ratelimiter.strategy.RateLimitingAlgorithm.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,6 +47,32 @@ public class RateLimiterFactoryTest {
 
         // Then
         assertThat(strategy).isInstanceOf(SlidingWindowStrategy.class);
+        assertThat(strategy.allowRequest("client-1")).isTrue();
+    }
+    @Test
+    void shouldCreateTokenBucketStrategy() {
+        // Given
+        RateLimiterFactory.Configuration config = new RateLimiterFactory.Configuration(100, 60000);
+        RateLimiterFactory factory = new RateLimiterFactory(TOKEN_BUCKET, config);
+
+        // When
+        RateLimitingStrategy strategy = factory.createStrategy();
+
+        // Then
+        assertThat(strategy).isInstanceOf(TokenBucketStrategy.class);
+        assertThat(strategy.allowRequest("client-1")).isTrue();
+    }
+    @Test
+    void shouldCreateLeakyBucketStrategy() {
+        // Given
+        RateLimiterFactory.Configuration config = new RateLimiterFactory.Configuration(100, 60000);
+        RateLimiterFactory factory = new RateLimiterFactory(LEAKY_BUCKET, config);
+
+        // When
+        RateLimitingStrategy strategy = factory.createStrategy();
+
+        // Then
+        assertThat(strategy).isInstanceOf(LeakyBucketStrategy.class);
         assertThat(strategy.allowRequest("client-1")).isTrue();
     }
 }

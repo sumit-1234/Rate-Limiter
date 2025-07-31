@@ -21,8 +21,8 @@ public class RateLimiterFactory {
         return switch(this.algorithm) {
             case FIXED_WINDOW -> new FixedWindowStrategy(config.maxRequests, config.timeWindow, timeProvider);
             case SLIDING_WINDOW -> new SlidingWindowStrategy(config.maxRequests, config.timeWindow, timeProvider);
-//            case LEAKY_BUCKET -> new LeakyBucketStrategy(config.maxRequests, config.timeWindow, timeProvider);
-//            case TOKEN_BUCKET -> new TokenBucketStrategy(config.maxRequests, config.timeWindow, timeProvider);
+            case LEAKY_BUCKET -> new LeakyBucketStrategy(config.maxRequests, config.timeWindow, timeProvider);
+            case TOKEN_BUCKET -> new TokenBucketStrategy(config.maxRequests, config.timeWindow, timeProvider);
             default -> throw new IllegalStateException("Unexpected value: " + this.algorithm);
         };
     }
