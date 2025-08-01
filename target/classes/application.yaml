@@ -1,0 +1,18 @@
+rate-limiter:
+  client-id-strategy: IP_ADDRESS
+  api-key-header: X-API-Key
+  user-id-header: X-User-ID
+  default-max-requests: 200
+  default-time-window-ms: 60000
+  default-algorithm: FIXED_WINDOW
+  endpoints:
+    "/api/hello":
+      max-requests: 10
+      time-window-ms: 60000
+      algorithm: FIXED_WINDOW
+      enabled: true
+    "/api/limited":
+      max-requests: 3
+      time-window-ms: 60000
+      algorithm: SLIDING_WINDOW
+      enabled: true

@@ -1,0 +1,50 @@
+{
+  "groups": [
+    {
+      "name": "rate-limiter",
+      "type": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "rate-limiter.api-key-header",
+      "type": "java.lang.String",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    },
+    {
+      "name": "rate-limiter.client-id-strategy",
+      "type": "java.lang.String",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    },
+    {
+      "name": "rate-limiter.default-algorithm",
+      "type": "com.learning.ratelimiter.strategy.RateLimitingAlgorithm",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    },
+    {
+      "name": "rate-limiter.default-max-requests",
+      "type": "java.lang.Integer",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    },
+    {
+      "name": "rate-limiter.default-time-window-ms",
+      "type": "java.lang.Long",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    },
+    {
+      "name": "rate-limiter.endpoints",
+      "type": "java.util.Map<java.lang.String,com.learning.ratelimiter.config.RateLimiterProperties$EndpointConfig>",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    },
+    {
+      "name": "rate-limiter.user-id-header",
+      "type": "java.lang.String",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+    }
+  ],
+  "hints": [],
+  "ignored": {
+    "properties": []
+  }
+}

@@ -114,8 +114,17 @@ public class TokenBucketStrategy implements RateLimitingStrategy {
     }
 
     @Override
-    public long getRemainingRequests(String ClientId) {
-        return 0;
+    public long getRemainingRequests(String clientId) {
+        TokenBucket bucket = clientBuckets.get(clientId);
+
+        if (bucket == null) {
+            return capacity; // No usage yet → full tokens available
+        }
+
+        // Refill before reporting available tokens
+        refillTokens(bucket);
+        return bucket.tokens.get();
     }
+
 
 }
