@@ -1,4 +1,4 @@
-# Production-Grade Rate Limiter
+# Rate Limiter
 
 > **High-performance, thread-safe rate limiting library with multiple algorithm implementations**
 
