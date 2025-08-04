@@ -1,5 +1,6 @@
 rate-limiter:
-  client-id-strategy: IP_ADDRESS
+  client-id-strategy: API_KEY
+  #IP_ADDRESS
   api-key-header: X-API-Key
   user-id-header: X-User-ID
   default-max-requests: 200

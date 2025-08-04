@@ -24,20 +24,69 @@ public class RateLimitService {
         logger.info("RateLimitService initialized with {} endpoint configurations",
                 properties.getEndpoints().size());
     }
+    private final Map<String, String> normalizedEndpointCache = new ConcurrentHashMap<>();
+
+    private String getNormalizedEndpoint(String endpoint) {
+        return normalizedEndpointCache.computeIfAbsent(endpoint,
+                ep -> ep.replaceAll("/", ""));
+    }
+    @PostConstruct
+    public void initializeRateLimiters() {
+        // Pre-create rate limiters for all configured endpoints
+        properties.getEndpoints().keySet().forEach(endpoint -> {
+            // Create rate limiter for the request format: "/api/hello"
+            String requestFormat = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+            getRateLimiterForEndpoint(requestFormat);
+            logger.debug("Pre-initialized rate limiter for: {}", requestFormat);
+        });
+        logger.info("Pre-initialized {} rate limiters", endpointLimiters.size());
+    }
     public RateLimitResult checkRateLimit(HttpServletRequest request) {
-        try{
-        // 1. Extract client ID (IP address or custom header)
-        String clientId=extractClientId(request);
-        // 2. Get endpoint path
-        String endpoint=request.getRequestURI();
-        // 3. Get or create rate limiter for this endpoint
-        RateLimitingStrategy rateLimiter=getRateLimiterForEndpoint(endpoint);
-        // 4. Check if request should be allowed
-        boolean allowed=rateLimiter.allowRequest(clientId);
-        // 5. Get remaining requests info
-        long remainingRequests=rateLimiter.getRemainingRequests(clientId);
-        // 6.Get Algorithm info
-        String algorithm=getAlgorithmForEndpoint(endpoint).name();
+        long totalStart = System.nanoTime();
+        try {
+            // 1. Extract client ID (IP address or custom header)
+            long step1Start = System.nanoTime();
+            String clientId = extractClientId(request);
+            long step1Duration = System.nanoTime() - step1Start;
+
+            // 2. Get endpoint path
+            long step2Start = System.nanoTime();
+            String endpoint = request.getRequestURI();
+            long step2Duration = System.nanoTime() - step2Start;
+
+            // 3. Get or create rate limiter for this endpoint
+            long step3Start = System.nanoTime();
+            RateLimitingStrategy rateLimiter = getRateLimiterForEndpoint(endpoint);
+            long step3Duration = System.nanoTime() - step3Start;
+
+            // 4. Check if request should be allowed
+            long step4Start = System.nanoTime();
+            boolean allowed = rateLimiter.allowRequest(clientId);
+            long step4Duration = System.nanoTime() - step4Start;
+
+            // 5. Get remaining requests info
+            long step5Start = System.nanoTime();
+            long remainingRequests = rateLimiter.getRemainingRequests(clientId);
+            long step5Duration = System.nanoTime() - step5Start;
+
+            // 6. Get Algorithm info
+            long step6Start = System.nanoTime();
+            String algorithm = getAlgorithmForEndpoint(endpoint).name();
+            long step6Duration = System.nanoTime() - step6Start;
+
+            long totalDuration = System.nanoTime() - totalStart;
+
+            // Log timing breakdown (only for first few requests to avoid spam)
+            if (totalDuration > 500_000) { // Only log if > 0.5ms
+                System.out.printf("TIMING: Total=%.3fms [Extract=%.3fms, URI=%.3fms, GetLimiter=%.3fms, Allow=%.3fms, Remaining=%.3fms, Algorithm=%.3fms]%n",
+                        totalDuration/1_000_000.0,
+                        step1Duration/1_000_000.0,
+                        step2Duration/1_000_000.0,
+                        step3Duration/1_000_000.0,
+                        step4Duration/1_000_000.0,
+                        step5Duration/1_000_000.0,
+                        step6Duration/1_000_000.0);
+            }
         RateLimitResult result = new RateLimitResult(
                 allowed,
                 remainingRequests,
@@ -61,7 +110,7 @@ public class RateLimitService {
      * Get algorithm for endpoint (for response headers)
      */
     private RateLimitingAlgorithm getAlgorithmForEndpoint(String endpoint) {
-        String normalizedEndpoint = endpoint.replaceAll("/", "");
+        String normalizedEndpoint = getNormalizedEndpoint(endpoint);
         logger.info(
                 "normalize {}",normalizedEndpoint
         );
@@ -164,7 +213,7 @@ public class RateLimitService {
         logger.info("Looking up endpoint: {}", endpoint);
 
         // Normalize by removing all '/'
-        String normalizedEndpoint = endpoint.replaceAll("/", "");
+        String normalizedEndpoint = getNormalizedEndpoint(endpoint);
 
         // Also normalize keys in the config
         RateLimiterProperties.EndpointConfig matchedConfig = null;
