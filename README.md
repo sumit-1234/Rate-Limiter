@@ -1,4 +1,4 @@
-# Production-Grade Rate Limiter
+# Rate Limiter
 
 > **High-performance, thread-safe rate limiting library with multiple algorithm implementations**
 
@@ -121,3 +121,10 @@ rate-limiter:
 ---
 
 **Key Java Concepts Demonstrated:** Concurrency, Collections Framework, Design Patterns, Spring Framework, Testing, Performance Optimization
+
+
+
+
+> ⚠️ **Notice**: This project is shared for **educational and evaluative purposes** only.  
+> Unauthorized use, copying, or redistribution is **strictly prohibited**.
+
