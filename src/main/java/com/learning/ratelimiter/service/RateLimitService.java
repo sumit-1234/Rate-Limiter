@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -15,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class RateLimitService {
     private static final Logger logger= LoggerFactory.getLogger(RateLimitService.class);
+    private static final Logger performanceLogger = LoggerFactory.getLogger("com.learning.ratelimiter.performance");
+    private static final Logger securityLogger = LoggerFactory.getLogger("com.learning.ratelimiter.security");
     private final RateLimiterProperties properties;
     private final Map<String, RateLimitingStrategy> endpointLimiters;
     public RateLimitService(RateLimiterProperties properties)
@@ -77,15 +80,9 @@ public class RateLimitService {
             long totalDuration = System.nanoTime() - totalStart;
 
             // Log timing breakdown (only for first few requests to avoid spam)
-            if (totalDuration > 500_000) { // Only log if > 0.5ms
-                System.out.printf("TIMING: Total=%.3fms [Extract=%.3fms, URI=%.3fms, GetLimiter=%.3fms, Allow=%.3fms, Remaining=%.3fms, Algorithm=%.3fms]%n",
-                        totalDuration/1_000_000.0,
-                        step1Duration/1_000_000.0,
-                        step2Duration/1_000_000.0,
-                        step3Duration/1_000_000.0,
-                        step4Duration/1_000_000.0,
-                        step5Duration/1_000_000.0,
-                        step6Duration/1_000_000.0);
+            if (totalDuration > 1_000_000) { // Log if > 1ms
+                performanceLogger.warn("Slow rate limit check: {}ms for client={}, endpoint={}",
+                        totalDuration / 1_000_000.0, clientId, endpoint);
             }
         RateLimitResult result = new RateLimitResult(
                 allowed,
@@ -95,8 +92,23 @@ public class RateLimitService {
                 endpoint
         );
 
-        logger.debug("Rate limit check: clientId={}, endpoint={}, allowed={}, remaining={}",
-                clientId, endpoint, allowed, remainingRequests);
+//        logger.debug("Rate limit check: clientId={}, endpoint={}, allowed={}, remaining={}",
+//                clientId, endpoint, allowed, remainingRequests);
+            // Add rate limiting context to MDC for this request
+            MDC.put("clientId", clientId);
+            MDC.put("endpoint", endpoint);
+            MDC.put("algorithm", algorithm);
+            MDC.put("allowed", String.valueOf(allowed));
+            MDC.put("remaining", String.valueOf(remainingRequests));
+
+// Enhanced logging with decision reasoning
+            if (allowed) {
+                logger.info("✅ ALLOWED: {} - Remaining: {}/{} using {}",
+                        clientId, remainingRequests, getMaxRequestsForEndpoint(endpoint), algorithm);
+            } else {
+                securityLogger.warn("Rate limit violation: client={}, endpoint={}, algorithm={}",
+                        clientId, endpoint, algorithm);
+            }
 
         return result;
     }catch(Exception e){
@@ -104,6 +116,21 @@ public class RateLimitService {
             // Fail open - allow request if rate limiting fails
             return new RateLimitResult(true, -1, "ERROR", "unknown", request.getRequestURI());
         }
+    }
+    private int getMaxRequestsForEndpoint(String endpoint) {
+        String normalizedEndpoint = getNormalizedEndpoint(endpoint);
+
+        RateLimiterProperties.EndpointConfig config = null;
+        for (Map.Entry<String, RateLimiterProperties.EndpointConfig> entry : properties.getEndpoints().entrySet()) {
+            String normalizedKey = entry.getKey().replaceAll("/", "");
+            if (normalizedKey.equals(normalizedEndpoint)) {
+                config = entry.getValue();
+                break;
+            }
+        }
+
+        return (config != null && config.isEnabled()) ?
+                config.getMaxRequests() : properties.getDefaultMaxRequests();
     }
 
     /**

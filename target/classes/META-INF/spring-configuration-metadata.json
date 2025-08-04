@@ -10,27 +10,32 @@
     {
       "name": "rate-limiter.api-key-header",
       "type": "java.lang.String",
-      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": "X-API-Key"
     },
     {
       "name": "rate-limiter.client-id-strategy",
       "type": "java.lang.String",
-      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": "IP_ADDRESS"
     },
     {
       "name": "rate-limiter.default-algorithm",
       "type": "com.learning.ratelimiter.strategy.RateLimitingAlgorithm",
-      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": "fixed-window"
     },
     {
       "name": "rate-limiter.default-max-requests",
       "type": "java.lang.Integer",
-      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": 100
     },
     {
       "name": "rate-limiter.default-time-window-ms",
       "type": "java.lang.Long",
-      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": 60000
     },
     {
       "name": "rate-limiter.endpoints",
@@ -40,7 +45,8 @@
     {
       "name": "rate-limiter.user-id-header",
       "type": "java.lang.String",
-      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": "X-User-ID"
     }
   ],
   "hints": [],

@@ -2,4 +2,7 @@
 /home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/comparison/AlgorithmComparisonTest.java
 /home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/concurrent/ConcurrentRateLimiterTest.java
 /home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/core/RateLimiterTest.java
+/home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/edge/EdgeCaseTest.java
 /home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/factory/RateLimiterFactoryTest.java
+/home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/integration/RateLimiterIntegrationTest.java
+/home/sumit/Documents/rate-limiter/src/test/java/com/learning/ratelimiter/performance/LoadTest.java

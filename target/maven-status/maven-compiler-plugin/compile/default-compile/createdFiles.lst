@@ -22,6 +22,7 @@ com/learning/ratelimiter/algorithms/ReentrantLockRateLimiter.class
 META-INF/spring-configuration-metadata.json
 com/learning/ratelimiter/core/SystemTimeProvider.class
 com/learning/ratelimiter/core/RateLimiter.class
+com/learning/ratelimiter/web/LoggingFilter.class
 com/learning/ratelimiter/strategy/RateLimitingStrategy.class
 com/learning/ratelimiter/service/RateLimitService.class
 com/learning/ratelimiter/strategy/LeakyBucketStrategy.class
