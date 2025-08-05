@@ -1,6 +1,7 @@
 com/learning/ratelimiter/core/FakeTimeProvider.class
 com/learning/ratelimiter/algorithms/SynchronizedRateLimiter.class
 com/learning/ratelimiter/core/ConfigurableRateLimiter.class
+com/learning/ratelimiter/health/RateLimiterHealthIndicator.class
 com/learning/ratelimiter/strategy/FixedWindowStrategy$ClientData.class
 com/learning/ratelimiter/service/RateLimitService$RateLimitResult.class
 com/learning/ratelimiter/strategy/TokenBucketStrategy.class
@@ -27,6 +28,7 @@ com/learning/ratelimiter/strategy/RateLimitingStrategy.class
 com/learning/ratelimiter/service/RateLimitService.class
 com/learning/ratelimiter/strategy/LeakyBucketStrategy.class
 com/learning/ratelimiter/web/RateLimitInterceptor.class
+com/learning/ratelimiter/service/RateLimitMetricsService.class
 com/learning/ratelimiter/factory/RateLimiterFactory.class
 com/learning/ratelimiter/strategy/TokenBucketStrategy$TokenBucket.class
 com/learning/ratelimiter/algorithms/ComputeRateLimiter.class

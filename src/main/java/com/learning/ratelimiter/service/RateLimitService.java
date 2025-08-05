@@ -4,6 +4,7 @@ import com.learning.ratelimiter.config.RateLimiterProperties;
 import com.learning.ratelimiter.factory.RateLimiterFactory;
 import com.learning.ratelimiter.strategy.RateLimitingAlgorithm;
 import com.learning.ratelimiter.strategy.RateLimitingStrategy;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -20,9 +21,11 @@ public class RateLimitService {
     private static final Logger securityLogger = LoggerFactory.getLogger("com.learning.ratelimiter.security");
     private final RateLimiterProperties properties;
     private final Map<String, RateLimitingStrategy> endpointLimiters;
-    public RateLimitService(RateLimiterProperties properties)
+    private final RateLimitMetricsService metricsService;
+    public RateLimitService(RateLimiterProperties properties,RateLimitMetricsService metricsService)
     {
         this.properties=properties;
+        this.metricsService=metricsService;
         this.endpointLimiters=new ConcurrentHashMap<>();
         logger.info("RateLimitService initialized with {} endpoint configurations",
                 properties.getEndpoints().size());
@@ -45,7 +48,10 @@ public class RateLimitService {
         logger.info("Pre-initialized {} rate limiters", endpointLimiters.size());
     }
     public RateLimitResult checkRateLimit(HttpServletRequest request) {
+        // Start timing
+        Timer.Sample timerSample = metricsService.startTimer();
         long totalStart = System.nanoTime();
+
         try {
             // 1. Extract client ID (IP address or custom header)
             long step1Start = System.nanoTime();
@@ -76,7 +82,8 @@ public class RateLimitService {
             long step6Start = System.nanoTime();
             String algorithm = getAlgorithmForEndpoint(endpoint).name();
             long step6Duration = System.nanoTime() - step6Start;
-
+            metricsService.recordRequest(allowed, endpoint, algorithm);
+            metricsService.recordClientActivity(clientId,endpoint);
             long totalDuration = System.nanoTime() - totalStart;
 
             // Log timing breakdown (only for first few requests to avoid spam)
@@ -115,6 +122,8 @@ public class RateLimitService {
             logger.error("Error during rate limit check", e);
             // Fail open - allow request if rate limiting fails
             return new RateLimitResult(true, -1, "ERROR", "unknown", request.getRequestURI());
+        }finally {
+            timerSample.stop(metricsService.getRateLimitCheckTimer());
         }
     }
     private int getMaxRequestsForEndpoint(String endpoint) {
