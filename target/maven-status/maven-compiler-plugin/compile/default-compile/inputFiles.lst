@@ -4,6 +4,7 @@
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/algorithms/ReentrantLockRateLimiter.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/algorithms/SynchronizedRateLimiter.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/config/RateLimiterProperties.java
+/home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/config/ResilienceConfig.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/config/WebConfig.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/controller/ApiController.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/core/ConfigurableRateLimiter.java
@@ -12,10 +13,13 @@
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/core/SimpleRateLimiter.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/core/SystemTimeProvider.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/core/TimeProvider.java
+/home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/exception/RateLimiterExceptions.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/factory/RateLimiterFactory.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/health/RateLimiterHealthIndicator.java
+/home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/resilience/DegradationStrategy.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/service/RateLimitMetricsService.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/service/RateLimitService.java
+/home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/service/ResilientRateLimitService.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/strategy/FixedWindowStrategy.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/strategy/LeakyBucketStrategy.java
 /home/sumit/Documents/rate-limiter/src/main/java/com/learning/ratelimiter/strategy/RateLimitingAlgorithm.java

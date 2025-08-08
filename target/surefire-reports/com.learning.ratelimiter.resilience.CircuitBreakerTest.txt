@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------------
+Test set: com.learning.ratelimiter.resilience.CircuitBreakerTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 25.15 s <<< FAILURE! -- in com.learning.ratelimiter.resilience.CircuitBreakerTest
+com.learning.ratelimiter.resilience.CircuitBreakerTest.shouldOpenCircuitAfterFailures -- Time elapsed: 0.597 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: OPEN
+ but was: CLOSED
+	at com.learning.ratelimiter.resilience.CircuitBreakerTest.shouldOpenCircuitAfterFailures(CircuitBreakerTest.java:81)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+

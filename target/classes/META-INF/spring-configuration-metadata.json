@@ -43,6 +43,12 @@
       "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties"
     },
     {
+      "name": "rate-limiter.fail-safe-strategy",
+      "type": "java.lang.String",
+      "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",
+      "defaultValue": "DENY"
+    },
+    {
       "name": "rate-limiter.user-id-header",
       "type": "java.lang.String",
       "sourceType": "com.learning.ratelimiter.config.RateLimiterProperties",

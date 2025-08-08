@@ -21,6 +21,8 @@ public class RateLimiterProperties {
     private String apiKeyHeader = "X-API-Key";
     private String userIdHeader = "X-User-ID";
 
+    private String failSafeStrategy="DENY";
+
     // Per-endpoint configuration
     private Map<String, EndpointConfig> endpoints = new HashMap<>();
 
@@ -45,6 +47,12 @@ public class RateLimiterProperties {
 
     public Map<String, EndpointConfig> getEndpoints() { return endpoints; }
     public void setEndpoints(Map<String, EndpointConfig> endpoints) { this.endpoints = endpoints; }
+
+    public void setFailSafeStrategy(String failSafeStrategy){
+        this.failSafeStrategy=failSafeStrategy;
+    }
+    public String getFailSafeStrategy() {return failSafeStrategy;
+    }
 
     // Inner class for endpoint-specific configuration
     public static class EndpointConfig {

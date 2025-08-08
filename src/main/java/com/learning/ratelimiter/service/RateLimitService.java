@@ -1,6 +1,7 @@
 package com.learning.ratelimiter.service;
 
 import com.learning.ratelimiter.config.RateLimiterProperties;
+import com.learning.ratelimiter.exception.RateLimiterExceptions;
 import com.learning.ratelimiter.factory.RateLimiterFactory;
 import com.learning.ratelimiter.strategy.RateLimitingAlgorithm;
 import com.learning.ratelimiter.strategy.RateLimitingStrategy;
@@ -22,7 +23,7 @@ public class RateLimitService {
     private final RateLimiterProperties properties;
     private final Map<String, RateLimitingStrategy> endpointLimiters;
     private final RateLimitMetricsService metricsService;
-    public RateLimitService(RateLimiterProperties properties,RateLimitMetricsService metricsService)
+    public RateLimitService(RateLimiterProperties properties, RateLimitMetricsService metricsService)
     {
         this.properties=properties;
         this.metricsService=metricsService;
@@ -51,37 +52,35 @@ public class RateLimitService {
         // Start timing
         Timer.Sample timerSample = metricsService.startTimer();
         long totalStart = System.nanoTime();
+        // 2. Get endpoint path
+
+        String endpoint = request.getRequestURI();
+        // 1. Extract client ID (IP address or custom header)
+
+        String clientId = extractClientId(request);
 
         try {
-            // 1. Extract client ID (IP address or custom header)
-            long step1Start = System.nanoTime();
-            String clientId = extractClientId(request);
-            long step1Duration = System.nanoTime() - step1Start;
 
-            // 2. Get endpoint path
-            long step2Start = System.nanoTime();
-            String endpoint = request.getRequestURI();
-            long step2Duration = System.nanoTime() - step2Start;
 
             // 3. Get or create rate limiter for this endpoint
-            long step3Start = System.nanoTime();
+
             RateLimitingStrategy rateLimiter = getRateLimiterForEndpoint(endpoint);
-            long step3Duration = System.nanoTime() - step3Start;
+
 
             // 4. Check if request should be allowed
-            long step4Start = System.nanoTime();
+
             boolean allowed = rateLimiter.allowRequest(clientId);
-            long step4Duration = System.nanoTime() - step4Start;
+
 
             // 5. Get remaining requests info
-            long step5Start = System.nanoTime();
+
             long remainingRequests = rateLimiter.getRemainingRequests(clientId);
-            long step5Duration = System.nanoTime() - step5Start;
+
 
             // 6. Get Algorithm info
-            long step6Start = System.nanoTime();
+
             String algorithm = getAlgorithmForEndpoint(endpoint).name();
-            long step6Duration = System.nanoTime() - step6Start;
+
             metricsService.recordRequest(allowed, endpoint, algorithm);
             metricsService.recordClientActivity(clientId,endpoint);
             long totalDuration = System.nanoTime() - totalStart;
@@ -118,13 +117,32 @@ public class RateLimitService {
             }
 
         return result;
-    }catch(Exception e){
-            logger.error("Error during rate limit check", e);
-            // Fail open - allow request if rate limiting fails
-            return new RateLimitResult(true, -1, "ERROR", "unknown", request.getRequestURI());
-        }finally {
+    }catch (RateLimiterExceptions.ConfigurationException e) {
+            logger.error("Configuration error for endpoint {}: {}", endpoint, e.getMessage());
+            return createFailSafeResult(clientId, endpoint, "CONFIG_ERROR");
+
+        } catch (RateLimiterExceptions.RateLimiterUnavailableException e) {
+            logger.error("Rate limiter unavailable for {}: {}", endpoint, e.getMessage());
+            return createFailSafeResult(clientId, endpoint, "UNAVAILABLE");
+
+        } catch (Exception e) {
+            logger.error("Unexpected error in rate limiter", e);
+            return createFailSafeResult(clientId, endpoint, "ERROR");
+
+        } finally {
             timerSample.stop(metricsService.getRateLimitCheckTimer());
         }
+    }
+    private RateLimitResult createFailSafeResult(String clientId, String endpoint, String errorType) {
+        // Read strategy from config
+        String strategy = properties.getFailSafeStrategy(); // You'd need to add this property
+
+        boolean allowed = "ALLOW".equalsIgnoreCase(strategy); // Default to ALLOW if not configured
+
+        logger.warn("Fail-safe {} activated for client={}, endpoint={}, reason={}",
+                allowed ? "ALLOW" : "DENY", clientId, endpoint, errorType);
+
+        return new RateLimitResult(allowed, -1, errorType, clientId, endpoint);
     }
     private int getMaxRequestsForEndpoint(String endpoint) {
         String normalizedEndpoint = getNormalizedEndpoint(endpoint);
@@ -159,74 +177,95 @@ public class RateLimitService {
      * Extract client ID based on configured strategy
      */
     private String extractClientId(HttpServletRequest request) {
-        String clientIdStrategy = properties.getClientIdStrategy();
+        try {
+            if (properties == null) {
+                logger.error("RateLimiterProperties is null, using fallback");
+                return "IP_" + request.getRemoteAddr();
+            }
+            String clientIdStrategy = properties.getClientIdStrategy();
 
-        switch (clientIdStrategy.toUpperCase()) {
-            case "IP_ADDRESS":
-                return extractIpAddress(request);
+            switch (clientIdStrategy.toUpperCase()) {
+                case "IP_ADDRESS":
+                    return extractIpAddress(request);
 
-            case "API_KEY":
-                String apiKey = request.getHeader(properties.getApiKeyHeader());
-                if (apiKey != null && !apiKey.trim().isEmpty()) {
-                    return "API_" + apiKey;
-                }
-                // Fallback to IP if no API key
-                logger.warn("No API key found in header '{}', falling back to IP address",
-                        properties.getApiKeyHeader());
-                return extractIpAddress(request);
+                case "API_KEY":
+                    String apiKey = request.getHeader(properties.getApiKeyHeader());
+                    if (apiKey != null && !apiKey.trim().isEmpty()) {
+                        return "API_" + apiKey;
+                    }
+                    // Fallback to IP if no API key
+                    logger.warn("No API key found in header '{}', falling back to IP address",
+                            properties.getApiKeyHeader());
+                    return extractIpAddress(request);
 
-            case "COMBINED":
-                String apiKeyValue = request.getHeader(properties.getApiKeyHeader());
-                String ipAddress = extractIpAddress(request);
+                case "COMBINED":
+                    String apiKeyValue = request.getHeader(properties.getApiKeyHeader());
+                    String ipAddress = extractIpAddress(request);
 
-                if (apiKeyValue != null && !apiKeyValue.trim().isEmpty()) {
-                    return "API_" + apiKeyValue + "_IP_" + ipAddress;
-                } else {
-                    return "IP_" + ipAddress;
-                }
+                    if (apiKeyValue != null && !apiKeyValue.trim().isEmpty()) {
+                        return "API_" + apiKeyValue + "_IP_" + ipAddress;
+                    } else {
+                        return "IP_" + ipAddress;
+                    }
 
-            case "USER_ID":
-                String userId = request.getHeader(properties.getUserIdHeader());
-                if (userId != null && !userId.trim().isEmpty()) {
-                    return "USER_" + userId;
-                }
-                // Fallback to IP if no user ID
-                logger.warn("No user ID found in header '{}', falling back to IP address",
-                        properties.getUserIdHeader());
-                return extractIpAddress(request);
+                case "USER_ID":
+                    String userId = request.getHeader(properties.getUserIdHeader());
+                    if (userId != null && !userId.trim().isEmpty()) {
+                        return "USER_" + userId;
+                    }
+                    // Fallback to IP if no user ID
+                    logger.warn("No user ID found in header '{}', falling back to IP address",
+                            properties.getUserIdHeader());
+                    return extractIpAddress(request);
 
-            default:
-                logger.warn("Unknown client ID strategy '{}', falling back to IP address", clientIdStrategy);
-                return extractIpAddress(request);
+                default:
+                    logger.warn("Unknown client ID strategy '{}', falling back to IP address", clientIdStrategy);
+                    return extractIpAddress(request);
+            }
+        }catch(Exception e){
+            // NEVER throw - always return a safe fallback
+            logger.error("Error extracting client ID, using IP fallback: {}", e.getMessage());
+            try {
+                return "IP_" + request.getRemoteAddr();
+            } catch (Exception fallbackError) {
+                // Even the fallback failed!
+                logger.error("Even IP fallback failed: {}", fallbackError.getMessage());
+                return "UNKNOWN_CLIENT_" + System.currentTimeMillis();
+            }
         }
-    }
+        }
 
     /**
      * Extract IP address with proxy support
      */
     private String extractIpAddress(HttpServletRequest request) {
-        // Check for IP address from various headers (for proxy support)
-        String[] headers = {
-                "X-Forwarded-For",
-                "X-Real-IP",
-                "X-Original-Forwarded-For",
-                "Proxy-Client-IP",
-                "WL-Proxy-Client-IP"
-        };
+        try {
+            // Check for IP address from various headers (for proxy support)
+            String[] headers = {
+                    "X-Forwarded-For",
+                    "X-Real-IP",
+                    "X-Original-Forwarded-For",
+                    "Proxy-Client-IP",
+                    "WL-Proxy-Client-IP"
+            };
 
-        for (String header : headers) {
-            String ip = request.getHeader(header);
-            if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
-                // X-Forwarded-For can contain multiple IPs, take the first one
-                if (ip.contains(",")) {
-                    ip = ip.split(",")[0].trim();
+            for (String header : headers) {
+                String ip = request.getHeader(header);
+                if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+                    // X-Forwarded-For can contain multiple IPs, take the first one
+                    if (ip.contains(",")) {
+                        ip = ip.split(",")[0].trim();
+                    }
+                    return "IP_" + ip;
                 }
-                return "IP_" + ip;
             }
-        }
 
-        // Fall back to remote address
-        return "IP_" + request.getRemoteAddr();
+            // Fall back to remote address
+            return "IP_" + request.getRemoteAddr();
+        }catch(Exception e){
+            logger.error("Error extracting IP address: {}", e.getMessage());
+            return "UNKNOWN_IP_" + System.currentTimeMillis();
+        }
     }
 
 
@@ -234,13 +273,50 @@ public class RateLimitService {
      * Get rate limiter for specific endpoint (create if doesn't exist)
      */
     private RateLimitingStrategy getRateLimiterForEndpoint(String endpoint) {
-        // Try exact match first
-        System.out.println("Available keys: " + endpointLimiters.keySet());
-        System.out.println("Looking up: " + endpoint);
-
+    try {
         return endpointLimiters.computeIfAbsent(endpoint, this::createRateLimiterForEndpoint);
-
+    }catch(Exception e){
+        logger.error("Failed to get rate limiter for {}, using default: {}", endpoint, e.getMessage());
+        return createDefaultRateLimiter(); // Simple fallback
     }
+    }
+    private RateLimitingStrategy createDefaultRateLimiter() {
+        try {
+            // Use default configuration when endpoint-specific config fails
+            RateLimiterFactory.Configuration defaultConfig =
+                    new RateLimiterFactory.Configuration(
+                            properties.getDefaultMaxRequests(),
+                            properties.getDefaultTimeWindowMs()
+                    );
+
+            RateLimiterFactory factory = new RateLimiterFactory(
+                    properties.getDefaultAlgorithm(),
+                    defaultConfig
+            );
+
+            logger.info("Created default rate limiter: {}req/{}ms using {}",
+                    properties.getDefaultMaxRequests(),
+                    properties.getDefaultTimeWindowMs(),
+                    properties.getDefaultAlgorithm());
+
+            return factory.createStrategy();
+
+        } catch (Exception e) {
+            logger.error("Even default rate limiter creation failed: {}", e.getMessage());
+
+            // Last resort: Create a very basic rate limiter
+            RateLimiterFactory.Configuration emergencyConfig =
+                    new RateLimiterFactory.Configuration(100, 60000); // 100 req/min
+
+            RateLimiterFactory emergencyFactory = new RateLimiterFactory(
+                    RateLimitingAlgorithm.FIXED_WINDOW,
+                    emergencyConfig
+            );
+
+            return emergencyFactory.createStrategy();
+        }
+    }
+
     /**
      * Create rate limiter using factory with endpoint-specific or default configuration
      */

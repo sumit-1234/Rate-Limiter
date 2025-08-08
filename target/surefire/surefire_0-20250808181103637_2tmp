@@ -1,0 +1,5 @@
+#surefire_0
+#Fri Aug 08 18:11:03 IST 2025
+basedir=/home/sumit/Documents/rate-limiter
+test=CircuitBreakerTest
+localRepository=/home/sumit/.m2/repository

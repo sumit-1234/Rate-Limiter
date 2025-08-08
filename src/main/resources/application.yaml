@@ -1,4 +1,5 @@
 rate-limiter:
+  fail-safe-strategy: ALLOW  # or DENY
   client-id-strategy: API_KEY
   #IP_ADDRESS
   api-key-header: X-API-Key
@@ -26,3 +27,22 @@ management:
     export:
       prometheus:
         enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      rateLimiterCircuitBreaker:
+        failure-rate-threshold: 50          # Open circuit after 50% failures
+        wait-duration-in-open-state: 30s    # Stay open for 30 seconds
+        sliding-window-size: 10             # Track last 10 calls
+        minimum-number-of-calls: 5          # Need at least 5 calls to calculate
+
+  retry:
+    instances:
+      rateLimiterRetry:
+        max-attempts: 3                     # Try 3 times total
+        wait-duration: 1s                   # Wait 1 second between retries
+
+logging:
+  level:
+    io.github.resilience4j: DEBUG
